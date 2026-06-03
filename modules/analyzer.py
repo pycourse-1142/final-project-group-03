@@ -26,13 +26,16 @@ def calculate_monthly_average(df):
     return monthly_avg
 
 
-# 季平均
+# 季平均 (依台灣氣候實務：2-4春, 5-7夏, 8-10秋, 11-1冬)
 def calculate_season_average(df):
-
-    df["season"] = (df["month"] % 12 + 3) // 3
-
+    season_map = {
+        2: 1, 3: 1, 4: 1,     # 2~4月為春季 (代號1)
+        5: 2, 6: 2, 7: 2,     # 5~7月為夏季 (代號2)
+        8: 3, 9: 3, 10: 3,    # 8~10月為秋季 (代號3)
+        11: 4, 12: 4, 1: 4    # 11~1月為冬季 (代號4)
+    }
+    df["season"] = df["month"].map(season_map)
     season_avg = df.groupby("season")["daily_avg"].mean()
-
     return season_avg
 
 
