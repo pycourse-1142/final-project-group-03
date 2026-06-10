@@ -46,7 +46,7 @@ if df is not None:
     print("\n--- 超標天數統計 ---")
     print(f"總超標天數：{exceed_days} 天")
     print("正在繪製：超標天數圖...")
-    plot_exceed_days(exceed_days)
+    plot_exceed_days(exceed_days, len(df))
     
 
     print("\n======================= 📊 花蓮 PM2.5 純數據分析報告 =======================")
