@@ -102,17 +102,77 @@ df.groupby("縣市")["daily_avg"].mean()
 > **重要規範**：請手動修改 `data/` 中的原始檔案，測試程式的「穩健性」。若程式因髒數據直接崩潰（Crash），此項不計分。
 
 | 測試情境 | 模擬動作 (如何「弄壞」數據) | 程式原始反應 | 修正後邏輯與檔案位置 |
+1.PM2.5 小時值出現文字
+|小時值非數字|將 08 欄位的數值改成 abc|mean() 計算失敗或欄位型態錯誤|在 modules/analyzer.py 的 calculate_daily_average() 使用 pd.to_numeric(errors="coerce")，將錯誤值轉為 NaN |
 
+2.小時值缺漏
+|小時值缺失|將某天的 15 欄位清空|平均值可能計算錯誤|Pandas 自動忽略 NaN，仍可計算其餘小時平均值；處理位置：modules/analyzer.py|
+
+3.日期格式錯誤
+|日期格式異常|將 2024/05/27 改成 2024/99/99|pd.to_datetime() 發生轉換錯誤|使用 errors="coerce" 將錯誤日期轉為 NaT，再刪除異常資料；處理位置：main.py|
 
 ---
 
 ##  四、AI 協作與糾錯紀錄 (佔比 10%)
 1.  **關鍵 Prompt**：
     > (請在此處貼上你們最常使用的指令)
+    請協助使用 Python pandas 讀取空氣品質 CSV 檔案，並計算每日 PM2.5 平均值。
+
+    請協助將 PM2.5 每小時資料轉換為每日平均資料，並處理缺失值與非數字資料。
+
+    請協助使用 matplotlib 繪製 PM2.5 趨勢圖、月平均長條圖與季節比較圖。
+
+    請協助設計模組化程式架構，將程式拆分為 parser、analyzer、plotter 與 main 模組。
     
 2.  **AI 代碼失效紀錄與人工修正**：
     * **失效說明**
     * **人工修正方法**
+
+**失效案例一：模組匯入錯誤**
+
+失效說明：
+
+AI 建議使用：
+
+from modules.parser import load_data
+
+但實際專案資料夾位置不正確，導致：
+
+ModuleNotFoundError: No module named 'modules.parser'
+
+人工修正方法：
+
+將 main.py 移至專案根目錄，並確認：
+
+project/
+├── main.py
+├── modules/
+│   ├── __init__.py
+│   ├── parser.py
+│   └── analyzer.py
+
+同時新增空白的 __init__.py 檔案，使 Python 能正確辨識模組。
+
+**失效案例二：日期格式異常**
+
+失效說明：
+
+AI 原始程式直接使用：
+
+pd.to_datetime(df["日期"])
+
+若資料中出現錯誤日期格式，程式可能直接中斷。
+
+人工修正方法：
+
+修改為：
+
+df["日期"] = pd.to_datetime(
+    df["日期"],
+    errors="coerce"
+)
+
+將錯誤日期轉為 NaT，再進行資料清理。
 
 ---
 
