@@ -15,10 +15,15 @@ from modules.plotter import (
 
 # 1. 讀取資料（內部包含品質控制判斷）
 df = load_data("data/即時值查詢.csv")
-
 if df is not None:
-    # 轉換日期格式
-    df["日期"] = pd.to_datetime(df["日期"])
+    # 1. 轉換日期格式 (終極防禦：錯誤日期轉 NaT 並剔除，防止後續分組崩潰)
+    df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
+    df = df.dropna(subset=["日期"])
+    
+    # 檢查剔除髒數據後是否還有存活的資料，防止空資料引發除以零的錯誤
+    if len(df) == 0:
+        print("❌ 警告：經過品質控制過濾後，無有效資料可供分析！")
+        exit()
 
     # 2. 計算與繪製每日平均
     df = calculate_daily_average(df)
