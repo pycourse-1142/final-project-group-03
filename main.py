@@ -48,7 +48,7 @@ if df is not None:
     print("正在繪製：超標天數圖...")
     plot_exceed_days(exceed_days)
     
- 
+
     print("\n======================= 📊 花蓮 PM2.5 純數據分析報告 =======================")
     total_days = len(df)
     exceed_rate = (exceed_days / total_days) * 100
