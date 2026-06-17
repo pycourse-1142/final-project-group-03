@@ -1,7 +1,11 @@
 import pandas as pd
 
 def load_data(path):
+    """
+    載入並清洗 CSV 數據，專門處理環境監測資料格式。
+    """
     try:
+        # 讀取 CSV，指定繁體中文編碼 (cp950) 並跳過前兩行無效說明列
         df = pd.read_csv(
             path,
             encoding='cp950',
@@ -9,22 +13,23 @@ def load_data(path):
         )
         print("【系統通知】資料讀取成功")
         
-        # --- 新增的防禦性資料品質檢查與清理 ---
+        # 定義 24 小時的欄位名稱 (即 "00" 到 "23")
         hour_columns = [f"{i:02d}" for i in range(24)]
         
-        # 1. 檢查必要的欄位是否存在
+        # 1. 檢查必要的欄位是否存在，避免後續處理發生 Key Error
         if "日期" not in df.columns or "測項" not in df.columns:
             print("❌ 錯誤：CSV 檔案格式不符，缺少 '日期' 或 '測項' 欄位")
             return None
             
-        # 2. 篩選出只有 PM2.5 的資料 (防禦性過濾)
+        # 2. 篩選出測項為 "PM2.5" 的資料，排除其他污染指標
         initial_count = len(df)
         df = df[df["測項"] == "PM2.5"]
         
-        # 3. 把 24 小時的數值強制轉換成數字，無法轉換的（如儀器維修字串）變成 NaN 空值
+        # 3. 將 24 小時的所有數值列強制轉換為浮點數
+        # errors='coerce' 處理方式：遇到無法轉換的字串（如儀器維修代碼 "NR"、"x"）會直接轉為 NaN (空值)
         df[hour_columns] = df[hour_columns].apply(pd.to_numeric, errors='coerce')
         
-        # 4. 判斷是否有整行 24 小時全部都是空值的無效列，將其剔除
+        # 4. 資料清洗：剔除整行 24 小時皆為空值的無效紀錄
         df = df.dropna(subset=hour_columns, how='all')
         cleaned_count = len(df)
         
@@ -34,5 +39,6 @@ def load_data(path):
         return df
 
     except Exception as e:
+        # 捕捉檔案路徑錯誤或讀取過程中的例外狀況
         print(f"❌ 讀檔或資料清洗失敗: {e}")
         return None

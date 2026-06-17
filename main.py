@@ -13,40 +13,41 @@ from modules.plotter import (
     plot_exceed_days
 )
 
-# 1. 讀取資料（內部包含品質控制判斷）
+# 1. 讀取資料：呼叫 parser 模組，包含品質控制與髒數據過濾
 df = load_data("data/即時值查詢.csv")
+
 if df is not None:
-    # 1. 轉換日期格式 (終極防禦：錯誤日期轉 NaT 並剔除，防止後續分組崩潰)
+    # 轉換日期格式：使用 errors="coerce" 將無法轉換的日期轉為 NaT，並直接刪除以確保時間序列的連續性
     df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
     df = df.dropna(subset=["日期"])
     
-    # 檢查剔除髒數據後是否還有存活的資料，防止空資料引發除以零的錯誤
+    # 防禦性檢查：確認資料清理後是否仍有有效筆數，避免後續運算發生錯誤
     if len(df) == 0:
         print("❌ 警告：經過品質控制過濾後，無有效資料可供分析！")
         exit()
 
-    # 2. 計算與繪製每日平均
+    # 2. 每日平均：計算數據並繪製趨勢圖
     df = calculate_daily_average(df)
     print("\n--- 每日平均資料 (前五行) ---")
     print(df[["日期", "daily_avg"]].head())
     print("正在繪製：每日趨勢圖...")
     plot_daily_pm25(df)
 
-    # 3. 計算與繪製月平均
+    # 3. 月平均：計算數據並繪製長條圖
     monthly_avg = calculate_monthly_average(df)
     print("\n--- 月平均資料 ---")
     print(monthly_avg)
     print("正在繪製：月平均圖...")
     plot_monthly_pm25(monthly_avg)
 
-    # 4. 計算與繪製季平均
+    # 4. 季平均：計算數據並繪製季節比較圖
     season_avg = calculate_season_average(df)
     print("\n--- 季平均資料 ---")
     print(season_avg)
     print("正在繪製：季平均圖...")
     plot_season_pm25(season_avg)
 
-    # 5. 計算與繪製超標天數
+    # 5. 超標天數：統計超過 15 µg/m³ 的天數並繪製分佈圖
     exceed_days = calculate_exceed_days(df)
     print("\n--- 超標天數統計 ---")
     print(f"總超標天數：{exceed_days} 天")
@@ -54,6 +55,7 @@ if df is not None:
     plot_exceed_days(exceed_days, len(df))
     
 
+    # 6. 輸出最終分析報告：綜合計算各項關鍵指標
     print("\n======================= 📊 花蓮 PM2.5 純數據分析報告 =======================")
     total_days = len(df)
     exceed_rate = (exceed_days / total_days) * 100
@@ -67,13 +69,13 @@ if df is not None:
     print(f" * 總超標天數：{exceed_days} 天")
     print(f" * 全期超標率：{exceed_rate:.2f} %")
     
+    # 顯示月份排序後的平均濃度
     print(f"\n【月平均濃度統計】")
     for m in monthly_avg.sort_values(ascending=False).index:
         print(f" * {m:02d} 月平均值：{monthly_avg.loc[m]:.2f} µg/m³")
         
+    # 顯示季節平均濃度，並轉為字典確保索引穩定性
     print(f"\n【季節平均濃度統計 (台灣氣候劃分)】")
-    # 將 Pandas Series 轉為標準 Python 字典，徹底避開索引位置判斷的警告地雷
-    # 將 Pandas Series 轉為標準 Python 字典，並強制把型別洗成純數字
     season_dict = {int(k): v for k, v in season_avg.items()}
     print(f" * 春季 (02-04月) 平均值：{season_dict.get(1, 0):.2f} µg/m³")
     print(f" * 夏季 (05-07月) 平均值：{season_dict.get(2, 0):.2f} µg/m³")
